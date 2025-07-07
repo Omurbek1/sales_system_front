@@ -33,6 +33,8 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { redirect, useRouter } from "next/navigation";
+import { useEffect } from "react";
 const { Title, Text } = Typography;
 
 const weeklySalesData = [
@@ -50,6 +52,8 @@ const totalSalesData = [
 const COLORS = ["#8884d8", "#82ca9d"];
 export default function DashboardPage() {
   const { user } = useAuthStore();
+  const router = useRouter();
+  console.log("user", user);
 
   if (!user) return null;
 

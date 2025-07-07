@@ -8,11 +8,13 @@ import { Order } from "@/types/order";
 import { v4 as uuidv4 } from "uuid";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useOrders } from "@/hooks/useOrders";
+import { useAuthStore } from "@/store/authStore";
 
 const OrderCreatePage = () => {
   const queryClient = useQueryClient();
   const router = useRouter();
-  const currentUser = useCurrentUser();
+  const { user } = useAuthStore();
+  const currentUser = user?.name;
   const { data: currentOrders } = useOrders();
 
   const handleSubmit = (formData: Omit<Order, "id" | "createdAt">) => {
@@ -20,7 +22,7 @@ const OrderCreatePage = () => {
       id: uuidv4(),
       createdAt: new Date().toISOString().split("T")[0],
       ...formData,
-      manager: currentUser.name,
+      manager: currentUser ?? "Неизвестный менеджер",
     };
 
     const updatedOrders = [...(currentOrders ?? []), newOrder];
@@ -32,7 +34,10 @@ const OrderCreatePage = () => {
   return (
     <MainLayout>
       <Typography.Title level={2}>Создание заказа</Typography.Title>
-      <OrderForm onSubmit={handleSubmit} managerName={currentUser.name} />
+      <OrderForm
+        onSubmit={handleSubmit}
+        managerName={currentUser ?? "Неизвестный менеджер"}
+      />
     </MainLayout>
   );
 };

@@ -15,6 +15,12 @@ const ManagerTable: React.FC<Props> = ({ data, onEdit, onDelete }) => {
     { title: "Email", dataIndex: "email", key: "email" },
     { title: "Дата", dataIndex: "createdAt", key: "createdAt" },
     {
+      title: "Пароль",
+      dataIndex: "password",
+      key: "password",
+      render: (text) => (text ? "********" : "Не задан"),
+    },
+    {
       title: "Действия",
       key: "actions",
       render: (_, record) => (

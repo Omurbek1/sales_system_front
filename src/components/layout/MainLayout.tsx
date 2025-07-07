@@ -3,17 +3,20 @@ import { Layout } from "antd";
 import Sidebar from "./Sidebar";
 import AppHeader from "./Header";
 import { ShoppingOutlined } from "@ant-design/icons";
-import ProtectedPage from "../auth/ProtectedPage";
+
+import { useRouter } from "next/navigation";
 
 const { Sider, Content } = Layout;
 const { Header } = Layout;
 
 const MainLayout = ({ children }: { children: React.ReactNode }) => {
+  const router = useRouter();
   return (
     <Layout style={{ height: "100vh", overflow: "hidden" }}>
       <Sider width={200} style={{ background: "#fff" }}>
         {/* logo company from antd icons */}
         <div
+          onClick={() => router.push("/")}
           style={{
             height: 32,
             margin: 16,

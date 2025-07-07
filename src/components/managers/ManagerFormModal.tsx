@@ -54,6 +54,13 @@ const ManagerFormModal: React.FC<Props> = ({
         <Form.Item name="email" label="Email" rules={[{ type: "email" }]}>
           <Input />
         </Form.Item>
+        <Form.Item
+          name="password"
+          label="Пароль"
+          rules={[{ required: !initialValues, message: "Введите пароль" }]}
+        >
+          <Input.Password />
+        </Form.Item>
       </Form>
     </Modal>
   );

@@ -1,5 +1,6 @@
 import { Form, Input, Select, Button, Space } from "antd";
 import { Order, OrderStatus, PaymentType } from "@/types/order";
+import MaskedInput from "antd-mask-input";
 
 interface Props {
   onSubmit: (data: Omit<Order, "id" | "createdAt">) => void;
@@ -31,9 +32,9 @@ const OrderForm: React.FC<Props> = ({ onSubmit, loading, managerName }) => {
       <Form.Item
         name="clientPhone"
         label="Телефон клиента"
-        rules={[{ required: true }]}
+        rules={[{ required: true, message: "Введите номер телефона" }]}
       >
-        <Input />
+        <MaskedInput mask="+996 (000) 000-000" />
       </Form.Item>
       <Form.Item
         name="clientAddress"

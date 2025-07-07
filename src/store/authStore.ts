@@ -24,7 +24,7 @@ export const useAuthStore = create<AuthStore>()(
       setUser: (user) => set({ user }),
     }),
     {
-      name: "auth-storage", // key для localStorage
+      name: "auth-storage",
     }
   )
 );

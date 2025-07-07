@@ -11,6 +11,9 @@ import { useAuthStore } from "@/store/authStore";
 const { Title } = Typography;
 
 export default function LoginPage() {
+  const { user } = useAuthStore();
+
+
   const [loading, setLoading] = useState(false);
 
   const router = useRouter();
