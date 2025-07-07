@@ -6,10 +6,11 @@ import { ShoppingOutlined } from "@ant-design/icons";
 import ProtectedPage from "../auth/ProtectedPage";
 
 const { Sider, Content } = Layout;
+const { Header } = Layout;
 
 const MainLayout = ({ children }: { children: React.ReactNode }) => {
   return (
-    <Layout style={{ minHeight: "100vh" }}>
+    <Layout style={{ height: "100vh", overflow: "hidden" }}>
       <Sider width={200} style={{ background: "#fff" }}>
         {/* logo company from antd icons */}
         <div
@@ -30,9 +31,26 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
         <Sidebar />
       </Sider>
       <Layout>
-        <AppHeader />
+        <Header
+          style={{
+            background: "#fff",
+            padding: 0,
+            position: "sticky",
+            top: 0,
+            zIndex: 90,
+            boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+          }}
+        >
+          <AppHeader />
+        </Header>
         <Content
-          style={{ margin: "24px 16px", background: "#fff", padding: 24 }}
+          style={{
+            margin: "24px 16px",
+            background: "#fff",
+            padding: 24,
+            height: "calc(100vh - 64px)",
+            overflowY: "auto",
+          }}
         >
           {children}
         </Content>

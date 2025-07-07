@@ -30,7 +30,7 @@ export default function LoginPage() {
           role: values.username === "admin" ? "admin" : "manager",
         });
         message.success("Успешный вход!");
-        router.push("/orders");
+        router.push("/");
       } else {
         message.error("Неверный логин или пароль");
       }
