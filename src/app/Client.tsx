@@ -8,7 +8,6 @@ import dayjs from "dayjs";
 import isToday from "dayjs/plugin/isToday";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { Provider } from "@/lib/Provider";
-import "@ant-design/v5-patch-for-react-19";
 
 dayjs.extend(relativeTime);
 dayjs.extend(isToday);
