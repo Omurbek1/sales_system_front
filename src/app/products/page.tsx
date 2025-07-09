@@ -14,6 +14,7 @@ import {
   TableColumnType,
   Menu,
   Dropdown,
+  MenuProps,
 } from "antd";
 import * as yup from "yup";
 import {
@@ -236,31 +237,35 @@ export default function ProductsPage() {
       title: "Действия",
       key: "actions",
       render: (_, record) => {
-        const menu = (
-          <Menu
-            onClick={async ({ key }) => {
-              if (key === "edit") {
-                handleEditProduct(record as UpdateProductDto);
-              } else if (key === "delete") {
-                try {
-                  await deleteProduct.mutateAsync(record.id);
-                  message.success("Товар удалён!");
-                } catch (err) {
-                  console.error(err);
-                  message.error("Ошибка при удалении товара");
-                }
+        const menu = {
+          items: [
+            {
+              key: "edit",
+              label: "Редактировать",
+            },
+            {
+              key: "delete",
+              label: "Удалить",
+              danger: true,
+            },
+          ],
+          onClick: async ({ key }: { key: string }) => {
+            if (key === "edit") {
+              handleEditProduct(record as UpdateProductDto);
+            } else if (key === "delete") {
+              try {
+                await deleteProduct.mutateAsync(record.id);
+                message.success("Товар удалён!");
+              } catch (err) {
+                console.error(err);
+                message.error("Ошибка при удалении товара");
               }
-            }}
-          >
-            <Menu.Item key="edit">Редактировать</Menu.Item>
-            <Menu.Item key="delete" danger>
-              Удалить
-            </Menu.Item>
-          </Menu>
-        );
+            }
+          },
+        };
 
         return (
-          <Dropdown overlay={menu} trigger={["click"]}>
+          <Dropdown menu={menu} trigger={["click"]}>
             <Button icon={<EllipsisOutlined />} />
           </Dropdown>
         );
