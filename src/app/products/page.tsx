@@ -1,7 +1,23 @@
 "use client";
 import { useState } from "react";
-import { Table, Input, Button, Modal, Form, message } from "antd";
-import { SearchOutlined, PlusOutlined } from "@ant-design/icons";
+import {
+  Table,
+  Input,
+  Button,
+  Modal,
+  Form,
+  message,
+  Select,
+  Upload,
+  Image,
+  Carousel,
+} from "antd";
+import {
+  SearchOutlined,
+  PlusOutlined,
+  UploadOutlined,
+  EditOutlined,
+} from "@ant-design/icons";
 
 const { Search } = Input;
 
@@ -12,102 +28,36 @@ type Product = {
   name: string;
   category: string;
   price: number;
+  cost: number;
+  margin: number;
+  commissionPercent: number;
   stock: number;
+  images: string[];
 };
 
-const initialProducts: Product[] = [
-  {
-    key: "1",
-    name: "iPhone 15 Pro",
-    category: "Смартфоны",
-    price: 1200,
-    stock: 15,
-  },
-  {
-    key: "2",
-    name: "MacBook Air M2",
-    category: "Ноутбуки",
-    price: 1500,
-    stock: 8,
-  },
-  {
-    key: "3",
-    name: "Samsung Galaxy S24",
-    category: "Смартфоны",
-    price: 1100,
-    stock: 20,
-  },
-  {
-    key: "4",
-    name: "Sony WH-1000XM5",
-    category: "Наушники",
-    price: 400,
-    stock: 30,
-  },
-  {
-    key: "5",
-    name: "Apple Watch Series 9",
-    category: "Смарт-часы",
-    price: 500,
-    stock: 12,
-  },
-  {
-    key: "6",
-    name: "Dell XPS 13",
-    category: "Ноутбуки",
-    price: 1400,
-    stock: 6,
-  },
-  {
-    key: "7",
-    name: "JBL Charge 5",
-    category: "Акустика",
-    price: 180,
-    stock: 25,
-  },
-  {
-    key: "8",
-    name: "Xiaomi Mi Band 8",
-    category: "Смарт-часы",
-    price: 60,
-    stock: 40,
-  },
-  {
-    key: "9",
-    name: "HP LaserJet Pro",
-    category: "Принтеры",
-    price: 250,
-    stock: 10,
-  },
-  {
-    key: "10",
-    name: "Canon EOS R10",
-    category: "Камеры",
-    price: 900,
-    stock: 5,
-  },
-];
-
-const categories = [
-  "Смартфоны",
-  "Ноутбуки",
-  "Наушники",
-  "Смарт-часы",
-  "Акустика",
-  "Принтеры",
-  "Камеры",
-];
+const initialProducts: Product[] = [];
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>(initialProducts);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [searchText, setSearchText] = useState("");
   const [filteredCategory, setFilteredCategory] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 5 });
+  const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [previewImages, setPreviewImages] = useState<string[]>([]);
+  const [categories, setCategories] = useState<string[]>([
+    "Смартфоны",
+    "Ноутбуки",
+    "Наушники",
+    "Смарт-часы",
+    "Акустика",
+    "Принтеры",
+    "Камеры",
+  ]);
 
-  // Filtered and searched data
   const filteredData = products.filter((product) => {
     const matchesSearch =
       product.name.toLowerCase().includes(searchText.toLowerCase()) ||
@@ -118,7 +68,7 @@ export default function ProductsPage() {
     return matchesSearch && matchesCategory;
   });
 
-  const handleTableChange = (pagination: any, filters: any, sorter: any) => {
+  const handleTableChange = (pagination: any) => {
     setPagination({
       current: pagination.current,
       pageSize: pagination.pageSize,
@@ -134,23 +84,54 @@ export default function ProductsPage() {
     setFilteredCategory(category);
     setPagination({ ...pagination, current: 1 });
   };
-
   const handleAddProduct = () => {
     form.resetFields();
+    setEditingProduct(null);
     setModalOpen(true);
   };
 
+  const handleEditProduct = (product: Product) => {
+    form.setFieldsValue({ ...product, images: [] });
+    setEditingProduct(product);
+    setModalOpen(true);
+  };
   const handleModalOk = async () => {
     try {
       setLoading(true);
       const values = await form.validateFields();
-      const newProduct: Product = {
-        key: (products.length + 1).toString(),
-        ...values,
+      const margin = values.price - values.cost;
+      const images = (values.images || []).map((file: any) =>
+        URL.createObjectURL(file.originFileObj)
+      );
+      const updatedProduct: Product = {
+        key: editingProduct?.key || (products.length + 1).toString(),
+        name: values.name,
+        category: values.category,
+        price: values.price,
+        cost: values.cost,
+        margin,
+        commissionPercent: values.commissionPercent,
+        stock: values.stock,
+        images: images.length ? images : editingProduct?.images || [],
       };
-      setProducts([newProduct, ...products]);
+
+      const updatedProducts = editingProduct
+        ? products.map((p) =>
+            p.key === editingProduct.key ? updatedProduct : p
+          )
+        : [updatedProduct, ...products];
+
+      setProducts(updatedProducts);
+
+      if (!categories.includes(values.category)) {
+        setCategories([...categories, values.category]);
+      }
+
       setModalOpen(false);
-      message.success("Товар успешно добавлен!");
+      setEditingProduct(null);
+      message.success(
+        editingProduct ? "Товар обновлён!" : "Товар успешно добавлен!"
+      );
     } catch (err) {
       // validation error
     } finally {
@@ -158,7 +139,24 @@ export default function ProductsPage() {
     }
   };
 
-  const columns = [
+  const normFile = (e: any) => {
+    if (Array.isArray(e)) {
+      return e;
+    }
+    return e?.fileList;
+  };
+
+  interface ProductColumn {
+    title: string;
+    dataIndex?: keyof Product | string;
+    key: string;
+    sorter?: (a: Product, b: Product) => number;
+    filters?: { text: string; value: string }[];
+    onFilter?: (value: string, record: Product) => boolean;
+    render?: (value: any, record?: Product, index?: number) => React.ReactNode;
+  }
+
+  const columns: ProductColumn[] = [
     {
       title: "Название",
       dataIndex: "name",
@@ -184,6 +182,26 @@ export default function ProductsPage() {
       ),
     },
     {
+      title: "Себестоимость",
+      dataIndex: "cost",
+      key: "cost",
+      render: (val: number) => `$${val}`,
+    },
+    {
+      title: "Маржа",
+      dataIndex: "margin",
+      key: "margin",
+      render: (val: number) => (
+        <span style={{ color: val >= 0 ? "#52c41a" : "#f5222d" }}>${val}</span>
+      ),
+    },
+    {
+      title: "% Менеджеру",
+      dataIndex: "commissionPercent",
+      key: "commissionPercent",
+      render: (val: number) => `${val}%`,
+    },
+    {
       title: "В наличии",
       dataIndex: "stock",
       key: "stock",
@@ -192,6 +210,38 @@ export default function ProductsPage() {
         <span style={{ color: stock > 10 ? "#52c41a" : "#faad14" }}>
           {stock}
         </span>
+      ),
+    },
+    {
+      title: "Фото",
+      dataIndex: "images",
+      key: "images",
+      render: (images: string[]) =>
+        images && images.length > 0 ? (
+          <Image
+            src={images[0]}
+            alt="Product"
+            width={50}
+            height={50}
+            style={{ borderRadius: 8, objectFit: "cover", cursor: "pointer" }}
+            preview={false}
+            onClick={() => {
+              setPreviewImages(images);
+              setImageModalOpen(true);
+            }}
+          />
+        ) : (
+          <span style={{ color: "#999" }}>Нет фото</span>
+        ),
+    },
+    {
+      title: "Действия",
+      key: "actions",
+      render: (_: any, record?: Product) => (
+        <Button
+          icon={<EditOutlined />}
+          onClick={() => record && handleEditProduct(record)}
+        />
       ),
     },
   ];
@@ -273,6 +323,28 @@ export default function ProductsPage() {
         }}
       />
       <Modal
+        open={imageModalOpen}
+        footer={null}
+        onCancel={() => setImageModalOpen(false)}
+        title="Фотографии товара"
+      >
+        <Carousel autoplay dots style={{ marginBottom: 16 }} effect="fade">
+          {previewImages.map((src, idx) => (
+            <img
+              key={idx}
+              src={src}
+              style={{
+                width: "100%",
+                maxHeight: 400,
+                objectFit: "contain",
+                borderRadius: 8,
+              }}
+              alt={`product-${idx}`}
+            />
+          ))}
+        </Carousel>
+      </Modal>
+      <Modal
         title="Добавить новый товар"
         open={modalOpen}
         onOk={handleModalOk}
@@ -300,28 +372,107 @@ export default function ProductsPage() {
           <Form.Item
             name="category"
             label="Категория"
-            rules={[{ required: true, message: "Выберите категорию" }]}
+            rules={[
+              { required: true, message: "Выберите или введите категорию" },
+            ]}
           >
-            <Input placeholder="Введите категорию" list="category-list" />
+            <Select
+              placeholder="Выберите или введите категорию"
+              showSearch
+              allowClear
+              onBlur={() => {
+                const value = form.getFieldValue("category");
+                if (value && !categories.includes(value)) {
+                  setCategories((prev) => [...prev, value]);
+                }
+              }}
+              options={categories.map((cat) => ({ label: cat, value: cat }))}
+              popupRender={(menu) => (
+                <>
+                  {menu}
+                  <div style={{ padding: 8 }}>
+                    <Button
+                      type="link"
+                      onClick={() => {
+                        const value = form.getFieldValue("category");
+                        if (value && !categories.includes(value)) {
+                          setCategories((prev) => [...prev, value]);
+                          message.success(
+                            `Добавлена новая категория: ${value}`
+                          );
+                        }
+                      }}
+                    >
+                      ➕ Добавить новую категорию
+                    </Button>
+                  </div>
+                </>
+              )}
+            />
           </Form.Item>
-          <datalist id="category-list">
-            {categories.map((cat) => (
-              <option value={cat} key={cat} />
-            ))}
-          </datalist>
           <Form.Item
             name="price"
             label="Цена ($)"
             rules={[
               { required: true, message: "Введите цену" },
               {
-                type: "number",
-                min: 0,
-                message: "Цена не может быть отрицательной",
+                validator: (_, value) =>
+                  value === undefined || value < 0
+                    ? Promise.reject("Цена не может быть отрицательной")
+                    : Promise.resolve(),
               },
             ]}
           >
-            <Input type="number" min={0} step={1} placeholder="Введите цену" />
+            <Input
+              type="number"
+              min={0}
+              step={1}
+              inputMode="numeric"
+              placeholder="Введите цену"
+            />
+          </Form.Item>
+          <Form.Item
+            name="cost"
+            label="Себестоимость ($)"
+            rules={[
+              { required: true, message: "Введите себестоимость" },
+              {
+                validator: (_, value) =>
+                  value === undefined || value < 0
+                    ? Promise.reject(
+                        "Себестоимость не может быть отрицательной"
+                      )
+                    : Promise.resolve(),
+              },
+            ]}
+          >
+            <Input
+              type="number"
+              min={0}
+              step={1}
+              placeholder="Введите себестоимость"
+            />
+          </Form.Item>
+          <Form.Item
+            name="commissionPercent"
+            label="% менеджеру от продажи"
+            rules={[
+              { required: true, message: "Введите процент менеджеру" },
+              {
+                validator: (_, value) =>
+                  value === undefined || value < 0
+                    ? Promise.reject("Процент не может быть отрицательным")
+                    : Promise.resolve(),
+              },
+            ]}
+          >
+            <Input
+              type="number"
+              min={0}
+              max={100}
+              step={1}
+              placeholder="Процент менеджеру от продажи"
+            />
           </Form.Item>
           <Form.Item
             name="stock"
@@ -329,9 +480,10 @@ export default function ProductsPage() {
             rules={[
               { required: true, message: "Введите количество" },
               {
-                type: "number",
-                min: 0,
-                message: "Количество не может быть отрицательным",
+                validator: (_, value) =>
+                  value === undefined || value < 0
+                    ? Promise.reject("Количество не может быть отрицательным")
+                    : Promise.resolve(),
               },
             ]}
           >
@@ -341,6 +493,22 @@ export default function ProductsPage() {
               step={1}
               placeholder="Введите количество"
             />
+          </Form.Item>
+          <Form.Item
+            name="images"
+            label="Фотографии"
+            valuePropName="fileList"
+            getValueFromEvent={normFile}
+            rules={[{ required: true, message: "Загрузите хотя бы одно фото" }]}
+          >
+            <Upload
+              listType="picture"
+              beforeUpload={() => false}
+              multiple
+              accept="image/*"
+            >
+              <Button icon={<UploadOutlined />}>Загрузить</Button>
+            </Upload>
           </Form.Item>
         </Form>
       </Modal>
