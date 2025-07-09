@@ -24,3 +24,21 @@ export const useUpdateProduct = () => {
     },
   });
 };
+
+//delete product
+export const useDeleteProduct = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string): Promise<void> => {
+      const res = await fetch(`${API_BASE_URL}/products/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) throw new Error("Ошибка при удалении товара");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    },
+  });
+};
