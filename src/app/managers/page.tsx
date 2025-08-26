@@ -1,17 +1,26 @@
 "use client";
-import { useManagers } from "@/hooks/useManagers";
+
+import {
+  useManagers,
+  useCreateManager,
+  useUpdateManager,
+  useDeleteManager,
+} from "@/hooks/managers";
 import MainLayout from "@/components/layout/MainLayout";
 import ManagerTable from "@/components/managers/ManagerTable";
 import ManagerFormModal from "@/components/managers/ManagerFormModal";
-import { Typography, Spin, Alert, Button, Space, message } from "antd";
+import { Typography, Spin, Alert, Button, Space, App } from "antd";
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { Manager } from "@/types/manager";
-import { v4 as uuidv4 } from "uuid";
+import type { Manager } from "@/types/manager";
 
 const ManagersPage = () => {
   const { data, isLoading, error } = useManagers();
-  const queryClient = useQueryClient();
+    const { message } = App.useApp();
+
+  // мутации dev/prod — одинаковый интерфейс
+  const createManager = useCreateManager();
+  const updateManager = useUpdateManager();
+  const deleteManager = useDeleteManager();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingManager, setEditingManager] = useState<Manager | null>(null);
@@ -21,36 +30,48 @@ const ManagersPage = () => {
     setIsModalOpen(true);
   };
 
-  const handleSubmit = (formData: Omit<Manager, "id" | "createdAt">) => {
-    const newManager: Manager = editingManager
-      ? { ...editingManager, ...formData }
-      : {
-          id: uuidv4(),
-          createdAt: new Date().toISOString().split("T")[0],
-          ...formData,
-        };
-
-    const updatedList = editingManager
-      ? data!.map((m) => (m.id === editingManager.id ? newManager : m))
-      : [...(data ?? []), newManager];
-
-    queryClient.setQueryData(["managers"], updatedList);
-    message.success(editingManager ? "Менеджер обновлён" : "Менеджер добавлен");
-    setIsModalOpen(false);
+  // formData НЕ содержит id/createdAt — их даст бэк (prod) или dev-хук
+  const handleSubmit = async (formData: Omit<Manager, "id" | "createdAt">) => {
+    try {
+      if (editingManager) {
+        await updateManager.mutateAsync({ ...editingManager, ...formData });
+        message.success("Менеджер обновлён");
+      } else {
+        await createManager.mutateAsync(formData);
+        message.success("Менеджер добавлен");
+      }
+      setIsModalOpen(false);
+      setEditingManager(null);
+    } catch (e: any) {
+      message.error(e?.message || "Ошибка сохранения");
+    }
   };
 
-  const handleDelete = (id: string) => {
-    const filtered = data!.filter((m) => m.id !== id);
-    queryClient.setQueryData(["managers"], filtered);
-    message.success("Менеджер удалён");
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteManager.mutateAsync(id);
+      message.success("Менеджер удалён");
+    } catch (e: any) {
+      message.error(e?.message || "Ошибка удаления");
+    }
   };
+
+  const anyLoading =
+    isLoading ||
+    createManager.isPending ||
+    updateManager.isPending ||
+    deleteManager.isPending;
 
   return (
     <MainLayout>
       <Typography.Title level={2}>Менеджеры</Typography.Title>
 
       <Space style={{ marginBottom: 16 }}>
-        <Button type="primary" onClick={handleAdd}>
+        <Button
+          type="primary"
+          onClick={handleAdd}
+          loading={createManager.isPending}
+        >
           Добавить менеджера
         </Button>
       </Space>
@@ -70,10 +91,15 @@ const ManagersPage = () => {
 
       <ManagerFormModal
         open={isModalOpen}
-        onCancel={() => setIsModalOpen(false)}
+        onCancel={() => {
+          setIsModalOpen(false);
+          setEditingManager(null);
+        }}
         onSubmit={handleSubmit}
         initialValues={editingManager ?? undefined}
       />
+
+      {anyLoading && null}
     </MainLayout>
   );
 };

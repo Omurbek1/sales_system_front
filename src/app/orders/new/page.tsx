@@ -8,7 +8,7 @@ import { Order } from "@/types/order";
 import { v4 as uuidv4 } from "uuid";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useOrders } from "@/hooks/useOrders";
-import { useAuthStore } from "@/store/authStore";
+import { useAuthStore } from "@/store/auth";
 
 const OrderCreatePage = () => {
   const queryClient = useQueryClient();

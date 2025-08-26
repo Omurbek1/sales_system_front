@@ -1,8 +1,9 @@
 export interface Manager {
   id: string;
   name: string;
-  login: string;
-  email: string;
-  password?: string;
-  createdAt: string;
+  phone: string;
+  email?: string;
+  createdAt: string; // YYYY-MM-DD
+  role?: "manager";
+  instagramUsername?: string; // например: "ivan_petrov"
 }

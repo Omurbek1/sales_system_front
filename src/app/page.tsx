@@ -1,6 +1,5 @@
 "use client";
 
-import { useAuthStore } from "@/store/authStore";
 import MainLayout from "@/components/layout/MainLayout";
 import {
   Card,
@@ -35,6 +34,7 @@ import {
 } from "recharts";
 import { redirect, useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { useAuthStore } from "@/store/auth";
 const { Title, Text } = Typography;
 
 const weeklySalesData = [

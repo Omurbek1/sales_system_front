@@ -1,6 +1,5 @@
 "use client";
 
-import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
 import MainLayout from "@/components/layout/MainLayout";
 import {
@@ -25,6 +24,7 @@ import {
   UserOutlined,
 } from "@ant-design/icons";
 import { useState } from "react";
+import { useAuthStore } from "@/store/auth";
 
 const { Title, Text } = Typography;
 type FileType = Parameters<GetProp<UploadProps, "beforeUpload">>[0];

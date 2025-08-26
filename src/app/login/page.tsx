@@ -1,43 +1,28 @@
 "use client";
-
-// login page ui with ant design beautiful and modern
-
 import { useState } from "react";
 import { Form, Input, Button, Typography, Card, message } from "antd";
 import { LockOutlined, UserOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/store/authStore";
-
+import { useAuthStore, useLogin } from "@/store/auth"; // <— свитчер импорт
 const { Title } = Typography;
 
 export default function LoginPage() {
-  const { user } = useAuthStore();
-
-
   const [loading, setLoading] = useState(false);
-
   const router = useRouter();
-  const login = useAuthStore((s) => s.login);
+  const doLogin = useLogin(); // <-- единый хук для dev/prod
+  const user = useAuthStore((s) => s.user); // если нужно
 
-  const onFinish = (values: { username: string; password: string }) => {
+  const onFinish = async (values: { username: string; password: string }) => {
     setLoading(true);
-
-    setTimeout(() => {
+    try {
+      await doLogin(values); // DEV: мок, PROD: реальный API
+      message.success("Успешный вход!");
+      router.push("/");
+    } catch (e: any) {
+      message.error(e?.message || "Неверный логин или пароль");
+    } finally {
       setLoading(false);
-      if (
-        (values.username === "admin" || values.username === "manager") &&
-        values.password === "1234"
-      ) {
-        login({
-          name: values.username,
-          role: values.username === "admin" ? "admin" : "manager",
-        });
-        message.success("Успешный вход!");
-        router.push("/");
-      } else {
-        message.error("Неверный логин или пароль");
-      }
-    }, 800);
+    }
   };
 
   return (
@@ -56,11 +41,7 @@ export default function LoginPage() {
           boxShadow: "0 4px 32px rgba(0,0,0,0.08)",
           borderRadius: 16,
         }}
-        styles={{
-          body: {
-            padding: 32,
-          },
-        }}
+        styles={{ body: { padding: 32 } }}
       >
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <Title level={2} style={{ marginBottom: 0 }}>

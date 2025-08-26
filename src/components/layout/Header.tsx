@@ -12,7 +12,7 @@ import {
 } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import React from "react";
-import { useAuthStore } from "@/store/authStore";
+import { useAuthStore } from "@/store/auth";
 
 const { Header } = Layout;
 const { Text } = Typography;
