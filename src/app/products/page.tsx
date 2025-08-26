@@ -15,6 +15,8 @@ import {
   Menu,
   Dropdown,
   MenuProps,
+  Tooltip,
+  Tag,
 } from "antd";
 import * as yup from "yup";
 import {
@@ -24,6 +26,7 @@ import {
   EllipsisOutlined,
   EditOutlined,
 } from "@ant-design/icons";
+import type { UploadFile } from "antd/es/upload/interface";
 
 const { Search } = Input;
 
@@ -36,7 +39,6 @@ import {
   useUpdateProduct,
   useDeleteProduct,
 } from "@/hooks/products";
-import { toBase64 } from "@/utils/utils";
 import { UpdateProductDto } from "@/types/products";
 
 const productSchema = yup.object().shape({
@@ -67,7 +69,7 @@ export default function ProductsPage() {
     null
   );
   const [imageModalOpen, setImageModalOpen] = useState(false);
-  const [previewImages, setPreviewImages] = useState([]);
+  const [previewImages, setPreviewImages] = useState<string[]>([]);
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   const [categoryInput, setCategoryInput] = useState("");
   const createProduct = useCreateProduct();
@@ -94,21 +96,37 @@ export default function ProductsPage() {
     setProductsQueryParams({ category });
   };
 
-  const handleTableChange = (pagination: any) => {
-    setProductsQueryParams({
-      page: pagination.current,
-      limit: pagination.pageSize,
-    });
-  };
-
   const handleAddProduct = () => {
     form.resetFields();
     setEditingProduct(null);
     setModalOpen(true);
   };
 
-  const handleEditProduct = (product: UpdateProductDto) => {
-    form.setFieldsValue({ ...product, images: [] });
+  const handleEditProduct = (
+    product: UpdateProductDto & { category?: { id: string; name: string } }
+  ) => {
+    // 1) подготовим список файлов для Upload
+    const initialFiles: UploadFile[] = (product.images || []).map(
+      (url, idx) => ({
+        uid: `${product.id}-${idx}`,
+        name: `image-${idx + 1}`,
+        status: "done",
+        url, // важное поле для уже загруженного изображения
+      })
+    );
+
+    // 2) подставим значения в форму
+    form.setFieldsValue({
+      name: product.name,
+      description: (product as any).description, // если есть в типе
+      categoryId: product.category?.id ?? product.categoryId,
+      price: product.price,
+      cost: product.cost,
+      commissionPercent: product.commissionPercent,
+      stock: product.stock,
+      images: initialFiles, // <-- вот сюда кладём UploadFile[]
+    });
+
     setEditingProduct(product);
     setModalOpen(true);
   };
@@ -119,6 +137,28 @@ export default function ProductsPage() {
       await productSchema.validate(values, { abortEarly: false });
       console.log("Validated values:", values);
 
+      // конвертируем в base64
+      const images: string[] = [];
+      if (values.images && values.images.length) {
+        for (const file of values.images as UploadFile[]) {
+          if (file.originFileObj) {
+            // новое изображение: в base64
+            const base64 = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.readAsDataURL(file.originFileObj as File);
+              reader.onload = () => resolve(reader.result as string);
+              reader.onerror = (err) => reject(err);
+            });
+            images.push(base64);
+          } else if (file.url) {
+            // старое изображение с URL
+            images.push(file.url);
+          } else if ((file as any).thumbUrl) {
+            // запасной вариант — превью, если originFileObj уже не доступен
+            images.push((file as any).thumbUrl);
+          }
+        }
+      }
       const payload = {
         name: values.name,
         categoryId: values.categoryId,
@@ -126,7 +166,8 @@ export default function ProductsPage() {
         cost: +values.cost,
         commissionPercent: +values.commissionPercent,
         stock: +values.stock,
-        images: [], // images пока не используется
+        images,
+        description: values.description?.trim() || undefined,
         createdBy: "admin",
       };
 
@@ -134,7 +175,7 @@ export default function ProductsPage() {
         await updateProduct.mutateAsync({ id: editingProduct.id, ...payload });
         message.success("Товар обновлён!");
       } else {
-        await createProduct.mutateAsync(payload);
+        await createProduct.mutateAsync(payload as any);
         message.success("Товар добавлен!");
       }
 
@@ -176,6 +217,20 @@ export default function ProductsPage() {
       render: (text) => <b>{text}</b>,
     },
     {
+      title: "Описание",
+      key: "description",
+      render: (_: any, rec: any) =>
+        rec?.description ? (
+          <Tooltip title={rec.description}>
+            <Tag color="blue" style={{ cursor: "help" }}>
+              подробнее
+            </Tag>
+          </Tooltip>
+        ) : (
+          <span style={{ color: "#999" }}> нет описании</span>
+        ),
+    },
+    {
       title: "Категория",
       dataIndex: ["category", "name"],
       key: "category",
@@ -183,8 +238,10 @@ export default function ProductsPage() {
         text: cat.name,
         value: cat.id,
       })),
-      onFilter: (value, record) =>
-        record.category?.id === value || record.category?.name === value,
+      onFilter: (value, record) => {
+        const v = String(value);
+        return record.category?.id === v || record.category?.name === v;
+      },
     },
     {
       title: "Цена ($)",
@@ -216,19 +273,36 @@ export default function ProductsPage() {
       title: "Фото",
       dataIndex: "images",
       key: "images",
-      render: (images) =>
+      render: (images: string[]) =>
         images?.length ? (
-          <Image
-            src={images[0]}
-            width={50}
-            height={50}
-            style={{ cursor: "pointer" }}
-            preview={false}
-            onClick={() => {
-              setPreviewImages(images);
-              setImageModalOpen(true);
-            }}
-          />
+          <div style={{ display: "flex", gap: 4 }}>
+            {images.slice(0, 3).map((src, i) => (
+              <Image
+                key={i}
+                src={src}
+                width={40}
+                height={40}
+                style={{ cursor: "pointer", objectFit: "cover" }}
+                preview={false}
+                onClick={() => {
+                  setPreviewImages(images as never);
+                  setImageModalOpen(true);
+                }}
+              />
+            ))}
+            {images.length > 3 && (
+              <Tag
+                color="blue"
+                style={{ cursor: "pointer" }}
+                onClick={() => {
+                  setPreviewImages(images as never);
+                  setImageModalOpen(true);
+                }}
+              >
+                +{images.length - 3}
+              </Tag>
+            )}
+          </div>
         ) : (
           <span>Нет фото</span>
         ),
@@ -310,7 +384,6 @@ export default function ProductsPage() {
             onChange: (page, pageSize) =>
               setProductsQueryParams({ page, limit: pageSize }),
           }}
-          onChange={handleTableChange}
           rowKey="id"
         />
       )}
@@ -318,7 +391,11 @@ export default function ProductsPage() {
       <Modal
         open={modalOpen}
         title={editingProduct ? "Редактировать товар" : "Добавить товар"}
-        onCancel={() => setModalOpen(false)}
+        onCancel={() => {
+          setModalOpen(false);
+          form.resetFields();
+          setEditingProduct(null);
+        }}
         onOk={handleModalOk}
         okText={editingProduct ? "Обновить" : "Добавить"}
       >
@@ -326,8 +403,11 @@ export default function ProductsPage() {
           <Form.Item name="name" label="Название" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
+          <Form.Item name="description" label="Описание">
+            <Input.TextArea rows={4} />
+          </Form.Item>
           <Form.Item
-            name="categoryName"
+            name="categoryId"
             label="Категория"
             rules={[{ required: true, message: "Выберите категорию" }]}
           >
@@ -335,59 +415,28 @@ export default function ProductsPage() {
               showSearch
               open={categoryDropdownOpen}
               onOpenChange={setCategoryDropdownOpen}
-              onSearch={(input) => setCategoryInput(input)}
+              onSearch={setCategoryInput}
+              optionFilterProp="label"
+              onChange={() => setCategoryDropdownOpen(false)}
               onInputKeyDown={async (e) => {
-                if (e.key === "Enter" && categoryInput) {
-                  const input = categoryInput.trim();
-
-                  const found = categoryList.find(
-                    (cat) => cat.name.toLowerCase() === input.toLowerCase()
-                  );
-
-                  if (!found) {
-                    try {
-                      const res = await fetch(
-                        `${process.env.NEXT_PUBLIC_API_BASE_URL}/category`,
-                        {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ name: input }),
-                        }
-                      );
-
-                      if (!res.ok)
-                        throw new Error("Ошибка при создании категории");
-
-                      const newCategory = await res.json();
-                      await refetchCategories();
-
-                      form.setFieldsValue({
-                        categoryName: newCategory.name,
-                        categoryId: newCategory.id,
-                      });
-                      message.success("Категория создана и выбрана");
-                      setCategoryDropdownOpen(false);
-                    } catch (err) {
-                      message.error("Ошибка при создании категории");
-                    }
-                  } else {
-                    form.setFieldsValue({ categoryId: found.name });
-                    setCategoryDropdownOpen(false);
+                if (e.key === "Enter" && categoryInput.trim()) {
+                  try {
+                    const created = await handleCategoryChange(
+                      categoryInput.trim()
+                    );
+                    await refetchCategories?.();
+                    form.setFieldsValue({ categoryId: created.id }); // ставим id
+                    message.success("Категория создана и выбрана");
+                  } catch {
+                    message.error("Ошибка при создании категории");
                   }
-
-                  e.preventDefault(); // предотвращаем закрытие dropdown
+                  setCategoryDropdownOpen(false);
+                  e.preventDefault();
                 }
-              }}
-              onChange={(value, option) => {
-                const opt = option as { label: string; value: string };
-                if (opt && typeof opt.label === "string") {
-                  form.setFieldsValue({ categoryName: opt.label });
-                }
-                setCategoryDropdownOpen(false);
               }}
               options={categoryList.map((cat) => ({
-                label: cat.name,
-                value: cat.id,
+                label: cat.name, // отображаемое
+                value: cat.id, // хранимое
               }))}
               placeholder="Выберите или введите категорию"
             />
@@ -417,17 +466,23 @@ export default function ProductsPage() {
           >
             <Input type="number" />
           </Form.Item>
-          {/* <Form.Item
+          <Form.Item
             name="images"
             label="Фото"
             valuePropName="fileList"
-            getValueFromEvent={normFile}
-            rules={[{ required: true }]}
+            getValueFromEvent={(e) => (Array.isArray(e) ? e : e?.fileList)}
           >
-            <Upload listType="picture" beforeUpload={() => false} multiple>
-              <Button icon={<UploadOutlined />}>Загрузить</Button>
+            <Upload
+              listType="picture-card"
+              beforeUpload={() => false} // запрет на автозагрузку, будем хранить base64
+              multiple
+            >
+              <div>
+                <UploadOutlined />
+                <div style={{ marginTop: 8 }}>Загрузить</div>
+              </div>
             </Upload>
-          </Form.Item> */}
+          </Form.Item>
         </Form>
       </Modal>
 
@@ -437,7 +492,7 @@ export default function ProductsPage() {
         onCancel={() => setImageModalOpen(false)}
         title="Фотографии товара"
       >
-        <Carousel autoplay effect="fade">
+        <Carousel autoplay effect="fade" infinite autoplaySpeed={3000}>
           {previewImages.map((src, idx) => (
             <img
               key={idx}

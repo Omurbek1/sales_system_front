@@ -3,18 +3,19 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev ",
-    "build": "next build",
-    "start": "next start",
+    "dev": "cross-env NEXT_PUBLIC_APP_MODE=dev next dev",
+    "prod": "cross-env NEXT_PUBLIC_APP_MODE=prod next prod",
+    "build": "cross-env NEXT_PUBLIC_APP_MODE=prod next build",
+    "start": "cross-env NEXT_PUBLIC_APP_MODE=prod next start",
     "lint": "next lint"
   },
   "dependencies": {
     "@ant-design/charts": "^2.6.0",
-    "@ant-design/icons": "^6.0.0",
-    "@ant-design/nextjs-registry": "^1.0.2",
+    "@ant-design/icons": "^5.6.1",
+    "@ant-design/nextjs-registry": "^1.1.0",
     "@tanstack/react-query": "^5.81.5",
     "@tanstack/react-query-devtools": "^5.81.5",
-    "antd": "^5.26.4",
+    "antd": "^5.27.1",
     "antd-mask-input": "^2.0.7",
     "next": "15.3.5",
     "react": "18.2.0",
@@ -22,13 +23,14 @@
     "recharts": "^3.0.2",
     "uuid": "^11.1.0",
     "yup": "^1.6.1",
-    "zustand": "^5.0.6"
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
+    "@types/node": "^20.19.11",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "cross-env": "^10.0.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
