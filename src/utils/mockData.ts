@@ -6,15 +6,15 @@ export let mockManagers: Manager[] = [
   {
     id: "1",
     name: "Асел",
-    login: "asel",
     email: "asel@mail.com",
     password: "1234",
     createdAt: "2024-12-10",
+    phone: "sss",
   },
   {
     id: "2",
     name: "Бакыт",
-    login: "bakyt",
+    phone: "996",
     email: "bakyt@mail.com",
     createdAt: "2025-01-15",
     password: "1234",
@@ -22,7 +22,7 @@ export let mockManagers: Manager[] = [
   {
     id: "3",
     name: "Нуржан",
-    login: "nurzhan",
+    phone: "222",
     email: "nurzhan@mail.com",
     createdAt: "2025-03-22",
     password: "1234",

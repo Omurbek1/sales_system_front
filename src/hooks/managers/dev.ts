@@ -12,6 +12,7 @@ const initialMock: Manager[] = [
     id: uuidv4(),
     name: "Иван Петров",
     phone: "+996 555 11-22-33",
+    password: "0",
     email: "ivan@example.com",
     createdAt: "2025-08-01",
     role: "manager",
@@ -19,6 +20,7 @@ const initialMock: Manager[] = [
   {
     id: uuidv4(),
     name: "Ольга Сидорова",
+    password: "a",
     phone: "+996 700 44-55-66",
     email: "olga@example.com",
     createdAt: "2025-08-10",
