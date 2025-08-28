@@ -8,6 +8,8 @@ import {
   PlusCircleOutlined,
   DollarOutlined,
   LoginOutlined,
+  HomeFilled,
+  DownCircleOutlined,
 } from "@ant-design/icons";
 import { usePathname, useRouter } from "next/navigation";
 
@@ -17,12 +19,14 @@ const Sidebar = () => {
 
   const items = [
     // { key: "/login", icon: <LoginOutlined />, label: "Авторизация" },
+    { key: "/", icon: <HomeFilled />, label: "Главная" },
+
     { key: "/products", icon: <ShoppingOutlined />, label: "Товары" },
     { key: "/managers", icon: <UserOutlined />, label: "Менеджеры" },
     { key: "/orders", icon: <FileTextOutlined />, label: "Заказы" },
     { key: "/orders/new", icon: <PlusCircleOutlined />, label: "Новый заказ" },
     { key: "/cashbox", icon: <DollarOutlined />, label: "Касса" },
-    
+    { key: "/material", icon: <DownCircleOutlined />, label: "Материалы" },
   ];
 
   return (

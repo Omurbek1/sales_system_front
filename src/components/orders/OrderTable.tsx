@@ -1,11 +1,23 @@
-import { Table, Tag, Select, message } from "antd";
+import {
+  Table,
+  Tag,
+  Select,
+  message,
+  Dropdown,
+  Button,
+  MenuProps,
+  Popconfirm,
+} from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { Order, OrderStatus } from "@/types/order";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useQueryClient } from "@tanstack/react-query";
+import { EllipsisOutlined } from "@ant-design/icons";
 
 interface Props {
   data: Order[];
+  onEdit: (order: Order) => void;
+  onDelete: (id: string) => void;
 }
 
 const statusOptions: OrderStatus[] = [
@@ -16,7 +28,24 @@ const statusOptions: OrderStatus[] = [
   "возврат",
 ];
 
-const OrderTable: React.FC<Props> = ({ data }) => {
+const ellipsisCell = (text?: string) =>
+  text ? (
+    <span
+      title={text}
+      style={{
+        display: "inline-block",
+        maxWidth: 220,
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {text}
+    </span>
+  ) : (
+    "—"
+  );
+const OrderTable: React.FC<Props> = ({ data, onEdit, onDelete }) => {
   const currentUser = useCurrentUser();
   const queryClient = useQueryClient();
 
@@ -36,7 +65,12 @@ const OrderTable: React.FC<Props> = ({ data }) => {
   const columns: ColumnsType<Order> = [
     { title: "Клиент", dataIndex: "clientName", key: "clientName" },
     { title: "Телефон", dataIndex: "clientPhone", key: "clientPhone" },
-    { title: "Адрес", dataIndex: "clientAddress", key: "clientAddress" },
+    {
+      title: "Адрес",
+      dataIndex: "clientAddress",
+      key: "clientAddress",
+      render: ellipsisCell,
+    },
     { title: "Товар", dataIndex: "product", key: "product" },
     { title: "Сумма", dataIndex: "amount", key: "amount" },
     {
@@ -63,6 +97,49 @@ const OrderTable: React.FC<Props> = ({ data }) => {
     },
     { title: "Менеджер", dataIndex: "manager", key: "manager" },
     { title: "Дата", dataIndex: "createdAt", key: "createdAt" },
+    {
+      title: "Действия",
+      key: "actions",
+      render: (_, record) => {
+        const items: MenuProps["items"] = [
+          { key: "edit", label: "Редактировать" },
+          {
+            key: "delete",
+            label: (
+              <Popconfirm
+                title="Удалить заказ?"
+                okText="Удалить"
+                cancelText="Отмена"
+                onConfirm={async () => {
+                  try {
+                    await onDelete(record.id);
+                    message.success("Заказ удалён!");
+                  } catch (err) {
+                    console.error(err);
+                    message.error("Ошибка при удалении заказа");
+                  }
+                }}
+              >
+                <span>Удалить</span>
+              </Popconfirm>
+            ),
+          },
+        ];
+        return (
+          <Dropdown
+            menu={{
+              items,
+              onClick: ({ key }) => {
+                if (key === "edit") onEdit(record);
+              },
+            }}
+            trigger={["click"]}
+          >
+            <Button icon={<EllipsisOutlined />} />
+          </Dropdown>
+        );
+      },
+    },
   ];
 
   return <Table rowKey="id" columns={columns} dataSource={data} />;

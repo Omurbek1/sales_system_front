@@ -1,16 +1,6 @@
 "use client";
-
 import MainLayout from "@/components/layout/MainLayout";
-import {
-  Card,
-  Col,
-  Row,
-  Statistic,
-  Typography,
-  Space,
-  Divider,
-  Flex,
-} from "antd";
+import { Card, Col, Row, Statistic, Typography, Space, Divider } from "antd";
 import {
   ShoppingOutlined,
   UsergroupAddOutlined,
@@ -32,9 +22,9 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { redirect, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth";
+import { useProductsList } from "@/hooks/products";
 const { Title, Text } = Typography;
 
 const weeklySalesData = [
@@ -51,9 +41,10 @@ const totalSalesData = [
 
 const COLORS = ["#8884d8", "#82ca9d"];
 export default function DashboardPage() {
+  const { productsListQuery, productsQueryParams, setProductsQueryParams } =
+    useProductsList();
   const { user } = useAuthStore();
   const router = useRouter();
-  console.log("user", user);
 
   if (!user) return null;
 
@@ -61,7 +52,7 @@ export default function DashboardPage() {
 
   const stats = {
     orders: 72,
-    products: 45,
+    products: productsListQuery.data?.total,
     managers: 5,
     salesToday: 130000,
     yourOrders: 12,
